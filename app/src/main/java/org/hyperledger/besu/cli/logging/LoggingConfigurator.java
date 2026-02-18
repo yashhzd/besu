@@ -53,11 +53,21 @@ public class LoggingConfigurator {
 
     // Determine which appender to use based on environment
     final String loggerType = System.getenv("LOGGER");
-    final boolean useSplunk = "Splunk".equals(loggerType);
+    final boolean requestedSplunk = "Splunk".equals(loggerType);
+    boolean usingSplunk = false;
 
-    if (useSplunk) {
-      // Add Splunk appender
-      addSplunkAppender(builder);
+    if (requestedSplunk) {
+      // Validate Splunk configuration and add appender
+      if (isSplunkConfigValid()) {
+        addSplunkAppender(builder);
+        usingSplunk = true;
+      } else {
+        // Fall back to console logging if Splunk configuration is invalid
+        System.err.println(
+            "WARNING: LOGGER=Splunk specified but required environment variables are missing. "
+                + "Required: SPLUNK_URL, SPLUNK_TOKEN. Falling back to console logging.");
+        addConsoleAppender(builder, loggingFormat, colorEnabled);
+      }
     } else {
       // Add Console appender with selected format
       addConsoleAppender(builder, loggingFormat, colorEnabled);
@@ -69,7 +79,7 @@ public class LoggingConfigurator {
     // Create root logger
     final Level level = parseLevel(logLevel);
     final RootLoggerComponentBuilder rootLogger = builder.newRootLogger(level);
-    rootLogger.add(builder.newAppenderRef(useSplunk ? "Splunk" : "Console"));
+    rootLogger.add(builder.newAppenderRef(usingSplunk ? "Splunk" : "Console"));
     builder.add(rootLogger);
 
     // Build and apply configuration
@@ -137,7 +147,6 @@ public class LoggingConfigurator {
             .addAttribute("url", splunkUrl)
             .addAttribute("token", splunkToken)
             .addAttribute("host", host)
-            .addAttribute("index", splunkIndex)
             .addAttribute("source", splunkSource)
             .addAttribute("sourcetype", splunkSourcetype)
             .addAttribute("messageFormat", messageFormat)
@@ -146,6 +155,11 @@ public class LoggingConfigurator {
             .addAttribute("batch_interval", batchInterval)
             .addAttribute("disableCertificateValidation", skipTlsVerify)
             .add(patternLayout);
+
+    // Only add index if specified (otherwise Splunk uses default index for the token)
+    if (splunkIndex != null && !splunkIndex.isEmpty()) {
+      splunkAppender.addAttribute("index", splunkIndex);
+    }
 
     builder.add(splunkAppender);
   }
@@ -217,7 +231,18 @@ public class LoggingConfigurator {
     if (logLevel == null || logLevel.isEmpty()) {
       return Level.INFO;
     }
-    return Level.getLevel(logLevel.toUpperCase(java.util.Locale.ROOT));
+    return Level.toLevel(logLevel.toUpperCase(java.util.Locale.ROOT), Level.INFO);
+  }
+
+  private static boolean isSplunkConfigValid() {
+    // Check required Splunk environment variables (only URL and TOKEN are required)
+    final String splunkUrl = System.getenv("SPLUNK_URL");
+    final String splunkToken = System.getenv("SPLUNK_TOKEN");
+
+    return splunkUrl != null
+        && !splunkUrl.isEmpty()
+        && splunkToken != null
+        && !splunkToken.isEmpty();
   }
 
   private static String getEnvOrDefault(final String envVar, final String defaultValue) {
