@@ -17,25 +17,14 @@ package org.hyperledger.besu.cli.logging;
 import org.hyperledger.besu.cli.options.LoggingFormat;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.Layout;
-import org.apache.logging.log4j.core.LifeCycle;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
 import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
-import org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
-import org.apache.logging.log4j.core.filter.MarkerFilter;
-import org.apache.logging.log4j.core.filter.RegexFilter;
-import org.apache.logging.log4j.core.layout.PatternLayout;
-import org.apache.logging.log4j.layout.template.json.JsonTemplateLayout;
 
 /** Programmatic Log4j2 configuration for Besu. */
 public class LoggingConfigurator {
@@ -54,14 +43,6 @@ public class LoggingConfigurator {
    */
   public static void configureLogging(
       final String logLevel, final LoggingFormat loggingFormat, final boolean colorEnabled) {
-
-    // Get current context and stop/remove existing appenders
-    final LoggerContext context = LoggerContext.getContext(false);
-    final Configuration oldConfig = context.getConfiguration();
-
-    // Stop and remove all existing appenders
-    oldConfig.getAppenders().values().forEach(LifeCycle::stop);
-    oldConfig.getRootLogger().getAppenders().clear();
 
     // Build new configuration
     final ConfigurationBuilder<BuiltConfiguration> builder =
@@ -93,7 +74,12 @@ public class LoggingConfigurator {
 
     // Build and apply configuration
     final BuiltConfiguration config = builder.build();
-    Configurator.reconfigure(config);
+    config.initialize();
+    config.start();
+
+    final LoggerContext context = LoggerContext.getContext(false);
+    context.setConfiguration(config);
+    context.updateLoggers();
   }
 
   private static void addConsoleAppender(
@@ -140,20 +126,21 @@ public class LoggingConfigurator {
     final String batchSizeCount = getEnvOrDefault("SPLUNK_BATCH_SIZE_COUNT", "1000");
     final String batchInterval = getEnvOrDefault("SPLUNK_BATCH_INTERVAL", "500");
     final String skipTlsVerify = getEnvOrDefault("SPLUNK_SKIPTLSVERIFY", "false");
+    final String messageFormat = getEnvOrDefault("SPLUNK_MESSAGE_FORMAT", "text");
 
     final LayoutComponentBuilder patternLayout =
         builder.newLayout("PatternLayout").addAttribute("pattern", "%msg");
 
     final AppenderComponentBuilder splunkAppender =
         builder
-            .newAppender("Splunk", "SplunkHttp")
+            .newAppender("Splunk", "splunkhttp")
             .addAttribute("url", splunkUrl)
             .addAttribute("token", splunkToken)
             .addAttribute("host", host)
             .addAttribute("index", splunkIndex)
             .addAttribute("source", splunkSource)
             .addAttribute("sourcetype", splunkSourcetype)
-            .addAttribute("messageFormat", "text")
+            .addAttribute("messageFormat", messageFormat)
             .addAttribute("batch_size_bytes", batchSizeBytes)
             .addAttribute("batch_size_count", batchSizeCount)
             .addAttribute("batch_interval", batchInterval)
@@ -165,8 +152,7 @@ public class LoggingConfigurator {
 
   private static void addLoggerFilters(final ConfigurationBuilder<BuiltConfiguration> builder) {
     // Disable Log4j2 internal status logger
-    builder.add(
-        builder.newLogger("org.apache.logging.log4j.status.StatusLogger", Level.OFF));
+    builder.add(builder.newLogger("org.apache.logging.log4j.status.StatusLogger", Level.OFF));
 
     // DNS timer task filter - suppress "Refreshing DNS records with ..." messages
     builder.add(

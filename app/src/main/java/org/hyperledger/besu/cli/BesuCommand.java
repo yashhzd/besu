@@ -1472,9 +1472,8 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     // structured logging formats.
     if (logIt) {
       // Log the effective level (INFO default if not specified)
-      final String effectiveLevel = loggingOptions.getLogLevel() != null
-          ? loggingOptions.getLogLevel()
-          : "INFO";
+      final String effectiveLevel =
+          loggingOptions.getLogLevel() != null ? loggingOptions.getLogLevel() : "INFO";
       logger.info("Logging level: {}", effectiveLevel);
 
       if (loggingOptions.getLoggingFormat() != LoggingFormat.PLAIN) {

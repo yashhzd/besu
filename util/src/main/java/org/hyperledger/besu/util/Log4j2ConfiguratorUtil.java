@@ -18,7 +18,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
