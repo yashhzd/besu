@@ -2196,13 +2196,6 @@ public class BesuCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void loggingFormatDefaultsToPlain() {
-    parseCommand();
-    assertThat(BesuCommand.getSelectedLoggingFormat())
-        .isEqualTo(org.hyperledger.besu.cli.options.LoggingFormat.PLAIN);
-  }
-
-  @Test
   public void loggingFormatAcceptsEcs() {
     parseCommand("--logging-format", "ECS");
     assertThat(commandErrorOutput.toString(UTF_8)).doesNotContain("--logging-format");
