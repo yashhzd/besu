@@ -155,9 +155,10 @@ public class LoggingConfigurator {
     builder.add(builder.newLogger("org.apache.logging.log4j.status.StatusLogger", Level.OFF));
 
     // DNS timer task filter - suppress "Refreshing DNS records with ..." messages
+    // Uses root logger level, filter only suppresses matching messages
     builder.add(
         builder
-            .newLogger("org.apache.tuweni.discovery.DNSTimerTask", Level.INFO)
+            .newLogger("org.apache.tuweni.discovery.DNSTimerTask")
             .add(
                 builder
                     .newFilter("RegexFilter", "DENY", "NEUTRAL")
@@ -166,7 +167,7 @@ public class LoggingConfigurator {
     // DNS resolver filter - suppress "DNS query error with ..." messages
     builder.add(
         builder
-            .newLogger("org.apache.tuweni.discovery.DNSResolver", Level.INFO)
+            .newLogger("org.apache.tuweni.discovery.DNSResolver")
             .add(
                 builder
                     .newFilter("RegexFilter", "DENY", "NEUTRAL")
@@ -175,7 +176,7 @@ public class LoggingConfigurator {
     // Vertx DNS exception filter - suppress "DNS query error occurred:..." messages
     builder.add(
         builder
-            .newLogger("io.vertx.core.dns.DnsException", Level.INFO)
+            .newLogger("io.vertx.core.dns.DnsException")
             .add(
                 builder
                     .newFilter("RegexFilter", "DENY", "NEUTRAL")
@@ -184,7 +185,7 @@ public class LoggingConfigurator {
     // Invalid transaction removal marker filter
     builder.add(
         builder
-            .newLogger("org.hyperledger.besu.ethereum.eth.transactions", Level.INFO)
+            .newLogger("org.hyperledger.besu.ethereum.eth.transactions")
             .add(
                 builder
                     .newFilter("MarkerFilter", "DENY", "NEUTRAL")
@@ -194,8 +195,7 @@ public class LoggingConfigurator {
     builder.add(
         builder
             .newLogger(
-                "io.opentelemetry.extension.trace.propagation.B3PropagatorExtractorMultipleHeaders",
-                Level.INFO)
+                "io.opentelemetry.extension.trace.propagation.B3PropagatorExtractorMultipleHeaders")
             .add(
                 builder
                     .newFilter("RegexFilter", "DENY", "NEUTRAL")
@@ -205,8 +205,7 @@ public class LoggingConfigurator {
     builder.add(
         builder
             .newLogger(
-                "org.hyperledger.besu.ethereum.trie.pathbased.bonsai.storage.BonsaiSnapshotWorldStateKeyValueStorage",
-                Level.INFO)
+                "org.hyperledger.besu.ethereum.trie.pathbased.bonsai.storage.BonsaiSnapshotWorldStateKeyValueStorage")
             .add(
                 builder
                     .newFilter("StackTraceMatchFilter", "DENY", "NEUTRAL")
